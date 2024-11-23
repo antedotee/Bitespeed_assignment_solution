@@ -1,5 +1,5 @@
 const express = require("express");
-const contactRoutes = require("./routes/contactRoutes");
+const contactRoutes = require("./src/routes/contactRoutes");
 
 const app = express();
 
