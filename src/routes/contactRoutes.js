@@ -27,20 +27,27 @@ router.post("/identify", async (req, res) => {
     } else {
       const primaryContact = contacts[0];
 
-      const existingContact = contacts.find(
-        (c) => c.email === email && c.phoneNumber === phoneNumber
-      );
+      const emailContact = contacts.find((c) => c.email === email);
+      const phoneContact = contacts.find((c) => c.phoneNumber === phoneNumber);
 
-      if (!existingContact && contacts.length === 1) {
-        await prisma.contact.create({
-          data: {
-            email,
-            phoneNumber,
-            linkedId: primaryContact.id,
-            linkPrecedence: "secondary",
-          },
-        });
+      if (!emailContact || !phoneContact) {
+        const existingContactWithBoth = contacts.find(
+          (c) => c.email === email && c.phoneNumber === phoneNumber
+        );
+
+        if (!existingContactWithBoth) {
+          const newSecondary = await prisma.contact.create({
+            data: {
+              email,
+              phoneNumber,
+              linkedId: primaryContact.id,
+              linkPrecedence: "secondary",
+            },
+          });
+          contacts.push(newSecondary);
+        }
       }
+
       await prisma.contact.updateMany({
         where: {
           OR: [
@@ -58,6 +65,7 @@ router.post("/identify", async (req, res) => {
           linkPrecedence: "secondary",
         },
       });
+
       contacts = await prisma.contact.findMany({
         where: {
           OR: [{ id: primaryContact.id }, { linkedId: primaryContact.id }],
